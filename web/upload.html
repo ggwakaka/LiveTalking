@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>WebRTC webcam</title>
+    <style>
+        button {
+            padding: 8px 16px;
+        }
+    </style>
+</head>
+<body>
+
+<form class="form-inline" id="echo-form">
+    <div class="form-group">
+        <input id="file" type="file">
+    </div>
+    <button id="submit" type="submit" class="btn btn-default">上传</button>
+</form>
+
+<script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+</body>
+<script type="text/javascript" charset="utf-8">
+    $(document).ready(function () {
+
+        $('#echo-form').on('submit', function (e) {
+            e.preventDefault();
+            var file = $('#file').val();
+            console.log('file: ' + file);
+            var formData = new FormData();
+            formData.append('file', $('#file')[0].files[0]);
+            $('#submit').text('上传中...');
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            }).then(function (response) {
+                if (response.status === 200) {
+                    $('#submit').text('上传成功');
+                } else {
+                    $('#submit').text('上传失败');
+                }
+            }).catch(function (error) {
+                $('#submit').text(`上传失败: ${error}`);
+            });
+        });
+
+
+    });
+
+
+</script>
+</html>

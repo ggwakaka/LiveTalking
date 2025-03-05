@@ -15,6 +15,8 @@
 #  limitations under the License.
 ###############################################################################
 from __future__ import annotations
+
+import gzip
 import time
 import numpy as np
 import soundfile as sf
@@ -40,6 +42,10 @@ from threading import Thread, Event
 from enum import Enum
 
 from typing import TYPE_CHECKING
+
+import websocket
+from websocket import ABNF
+
 if TYPE_CHECKING:
     from basereal import BaseReal
 
@@ -589,4 +595,145 @@ class XTTS(BaseTTS):
                     streamlen -= self.chunk
                     idx += self.chunk
         eventpoint={'status':'end','text':text,'msgenvent':textevent}
-        self.parent.put_audio_frame(np.zeros(self.chunk,np.float32),eventpoint)  
+        self.parent.put_audio_frame(np.zeros(self.chunk,np.float32),eventpoint)
+
+
+MESSAGE_TYPES = {11: "audio-only server response", 12: "frontend server response", 15: "error message from server"}
+MESSAGE_TYPE_SPECIFIC_FLAGS = {0: "no sequence number", 1: "sequence number > 0",
+                               2: "last message from server (seq < 0)", 3: "sequence number < 0"}
+MESSAGE_SERIALIZATION_METHODS = {0: "no serialization", 1: "JSON", 15: "custom type"}
+MESSAGE_COMPRESSIONS = {0: "no compression", 1: "gzip", 15: "custom compression method"}
+
+appid = "9050650716"
+token = "nd8USRaoocU1Rmc17Nx6PcWXUDafTcLI"
+cluster = "volcano_tts"
+voice_type = "BV705_streaming"
+api_url = "wss://openspeech.bytedance.com/api/v1/tts/ws_binary"
+class DYTTS(BaseTTS):
+    def __init__(self, opt, parent):
+        super().__init__(opt, parent)
+
+    def txt_to_audio(self, msg):
+        text, textevent = msg
+        self.stream_tts(self.dy_voice(text), msg)
+
+    def dy_voice(self, text):
+        submit_request_json = {
+            "app": {
+                "appid": appid,
+                "token": token,
+                "cluster": cluster
+            },
+            "user": {
+                "uid": "388808087185088"
+            },
+            "audio": {
+                "voice_type": voice_type,
+                "rate": 16000,
+                "speed_ratio": 1.0,
+                "volume_ratio": 1.0,
+                "pitch_ratio": 1.0,
+            },
+            "request": {
+                "reqid": str(uuid.uuid4()),
+                "text": text,
+                "text_type": "plain",
+                "operation": "submit"
+            }
+        }
+
+        payload_bytes = str.encode(json.dumps(submit_request_json))
+        full_client_request = bytearray(b'\x11\x10\x10\x00')
+        full_client_request.extend((len(payload_bytes)).to_bytes(4, 'big'))  # payload size(4 bytes)
+        full_client_request.extend(payload_bytes)  # payload
+        logger.info("request tts for : ", text)
+        header = {"Authorization": f"Bearer; {token}"}
+
+        ws = websocket.create_connection(api_url, header=header, skip_utf8_validation=True)
+        ws.send(full_client_request, opcode=ABNF.OPCODE_BINARY)
+        while True:
+            code, res = ws.recv_data()
+            print("--------------------------- response ---------------------------")
+            # print(f"response raw bytes: {res}")
+            protocol_version = res[0] >> 4
+            header_size = res[0] & 0x0f
+            message_type = res[1] >> 4
+            message_type_specific_flags = res[1] & 0x0f
+            serialization_method = res[2] >> 4
+            message_compression = res[2] & 0x0f
+            reserved = res[3]
+            header_extensions = res[4:header_size * 4]
+            payload = res[header_size * 4:]
+            print(f"            Protocol version: {protocol_version:#x} - version {protocol_version}")
+            print(f"                 Header size: {header_size:#x} - {header_size * 4} bytes ")
+            print(f"                Message type: {message_type:#x} - {MESSAGE_TYPES[message_type]}")
+            print(
+                f" Message type specific flags: {message_type_specific_flags:#x} - {MESSAGE_TYPE_SPECIFIC_FLAGS[message_type_specific_flags]}")
+            print(
+                f"Message serialization method: {serialization_method:#x} - {MESSAGE_SERIALIZATION_METHODS[serialization_method]}")
+            print(
+                f"         Message compression: {message_compression:#x} - {MESSAGE_COMPRESSIONS[message_compression]}")
+            print(f"                    Reserved: {reserved:#04x}")
+            if header_size != 1:
+                print(f"           Header extensions: {header_extensions}")
+            if message_type == 0xb:  # audio-only server response
+                if message_type_specific_flags == 0:  # no sequence number as ACK
+                    print("                Payload size: 0")
+                    return
+                else:
+                    sequence_number = int.from_bytes(payload[:4], "big", signed=True)
+                    payload_size = int.from_bytes(payload[4:8], "big", signed=False)
+                    payload = payload[8:]
+                    yield payload
+                    print(f"             Sequence number: {sequence_number}")
+                    print(f"                Payload size: {payload_size} bytes")
+                if sequence_number < 0:
+                    return
+                else:
+                    return
+            elif message_type == 0xf:
+                code = int.from_bytes(payload[:4], "big", signed=False)
+                msg_size = int.from_bytes(payload[4:8], "big", signed=False)
+                error_msg = payload[8:]
+                if message_compression == 1:
+                    error_msg = gzip.decompress(error_msg)
+                error_msg = str(error_msg, "utf-8")
+                print(f"          Error message code: {code}")
+                print(f"          Error message size: {msg_size} bytes")
+                print(f"               Error message: {error_msg}")
+                return
+            elif message_type == 0xc:
+                msg_size = int.from_bytes(payload[:4], "big", signed=False)
+                payload = payload[4:]
+                if message_compression == 1:
+                    payload = gzip.decompress(payload)
+                print(f"            Frontend message: {payload}")
+            else:
+                print("undefined message type!")
+                return
+
+    def stream_tts(self,audio_stream,msg):
+        text,textevent = msg
+        first = True
+        last_stream = np.array([],dtype=np.float32)
+        for chunk in audio_stream:
+            if chunk is not None and len(chunk)>0:
+                stream = np.frombuffer(chunk, dtype=np.int16).astype(np.float32) / 32767
+                stream = np.concatenate((last_stream,stream))
+                #stream = resampy.resample(x=stream, sr_orig=24000, sr_new=self.sample_rate)
+                #byte_stream=BytesIO(buffer)
+                #stream = self.__create_bytes_stream(byte_stream)
+                streamlen = stream.shape[0]
+                idx=0
+                while streamlen >= self.chunk:
+                    eventpoint=None
+                    if first:
+                        eventpoint={'status':'start','text':text,'msgenvent':textevent}
+                        first = False
+                    self.parent.put_audio_frame(stream[idx:idx+self.chunk],eventpoint)
+                    streamlen -= self.chunk
+                    idx += self.chunk
+                last_stream = stream[idx:] #get the remain stream
+        eventpoint={'status':'end','text':text,'msgenvent':textevent}
+        self.parent.put_audio_frame(np.zeros(self.chunk,np.float32),eventpoint)
+

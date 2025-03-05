@@ -14,6 +14,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 ###############################################################################
+import sys
 
 # server.py
 from flask import Flask, render_template,send_from_directory,request, jsonify
@@ -204,6 +205,28 @@ async def record(request):
         ),
     )
 
+
+async def upload(request):
+    form = await request.post()
+    fileobj = form["file"]
+    filebytes = fileobj.file.read()
+    filename = fileobj.filename
+    file_temp_path = f"/tmp/{filename}"
+    # 存为临时文件
+    with open(file_temp_path, "wb") as f:
+        f.write(filebytes)
+    from wav2lip.genavatar import main
+    main("wav2lip256_avatar1", file_temp_path, 256, replace=True)
+    global avatar
+    avatar = load_avatar(opt.avatar_id)
+    return web.Response(
+        content_type="application/json",
+        text=json.dumps(
+            {"code": 0, "msg": "ok"}
+        ),
+    )
+
+
 async def is_speaking(request):
     params = await request.json()
 
@@ -255,6 +278,7 @@ async def run(push_url,sessionid):
 # os.environ['MKL_SERVICE_FORCE_INTEL'] = '1'
 # os.environ['MULTIPROCESSING_METHOD'] = 'forkserver'                                                    
 if __name__ == '__main__':
+    sys.path.append('./wav2lip')
     mp.set_start_method('spawn')
     parser = argparse.ArgumentParser()
     parser.add_argument('--pose', type=str, default="data/data_kf.json", help="transforms.json, pose source")
@@ -445,7 +469,7 @@ if __name__ == '__main__':
         rendthrd.start()
 
     #############################################################################
-    appasync = web.Application()
+    appasync = web.Application(client_max_size=5 * 1024 * 1024)
     appasync.on_shutdown.append(on_shutdown)
     appasync.router.add_post("/offer", offer)
     appasync.router.add_post("/human", human)
@@ -453,6 +477,7 @@ if __name__ == '__main__':
     appasync.router.add_post("/set_audiotype", set_audiotype)
     appasync.router.add_post("/record", record)
     appasync.router.add_post("/is_speaking", is_speaking)
+    appasync.router.add_post("/upload", upload)
     appasync.router.add_static('/',path='web')
 
     # Configure default CORS settings.

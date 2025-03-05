@@ -9,21 +9,6 @@ import pickle
 import face_detection
 
 
-parser = argparse.ArgumentParser(description='Inference code to lip-sync videos in the wild using Wav2Lip models')
-parser.add_argument('--img_size', default=96, type=int)
-parser.add_argument('--avatar_id', default='wav2lip_avatar1', type=str)
-parser.add_argument('--video_path', default='', type=str)
-parser.add_argument('--nosmooth', default=False, action='store_true',
-					help='Prevent smoothing face detections over a short temporal window')
-parser.add_argument('--pads', nargs='+', type=int, default=[0, 10, 0, 0], 
-					help='Padding (top, bottom, left, right). Please adjust to include chin at least')
-parser.add_argument('--face_det_batch_size', type=int, 
-					help='Batch size for face detection', default=16)
-args = parser.parse_args()
-
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
-print('Using {} for inference.'.format(device))
-
 def osmakedirs(path_list):
     for path in path_list:
         os.makedirs(path) if not os.path.exists(path) else None
@@ -59,11 +44,11 @@ def get_smoothened_boxes(boxes, T):
 		boxes[i] = np.mean(window, axis=0)
 	return boxes
 
-def face_detect(images):
+def face_detect(images, face_det_batch_size, pads, nosmooth):
 	detector = face_detection.FaceAlignment(face_detection.LandmarksType._2D, 
-											flip_input=False, device=device)
+											flip_input=False, device='cuda' if torch.cuda.is_available() else 'cpu')
 
-	batch_size = args.face_det_batch_size
+	batch_size = face_det_batch_size
 	
 	while 1:
 		predictions = []
@@ -79,7 +64,7 @@ def face_detect(images):
 		break
 
 	results = []
-	pady1, pady2, padx1, padx2 = args.pads
+	pady1, pady2, padx1, padx2 = pads
 	for rect, image in zip(predictions, images):
 		if rect is None:
 			cv2.imwrite('temp/faulty_frame.jpg', image) # check this frame where the face was not detected.
@@ -93,34 +78,54 @@ def face_detect(images):
 		results.append([x1, y1, x2, y2])
 
 	boxes = np.array(results)
-	if not args.nosmooth: boxes = get_smoothened_boxes(boxes, T=5)
+	if not nosmooth: boxes = get_smoothened_boxes(boxes, T=5)
 	results = [[image[y1: y2, x1:x2], (y1, y2, x1, x2)] for image, (x1, y1, x2, y2) in zip(images, boxes)]
 
 	del detector
 	return results 
 
+
+def main(avatar_id, video_path, img_size, nosmooth=False, pads=None, face_det_batch_size=16, replace=False):
+	if pads is None:
+		pads = [0, 10, 0, 0]
+	avatar_path = f"./results/avatars/{avatar_id}"
+	full_imgs_path = f"{avatar_path}/full_imgs"
+	face_imgs_path = f"{avatar_path}/face_imgs"
+	coords_path = f"{avatar_path}/coords.pkl"
+	osmakedirs([avatar_path,full_imgs_path,face_imgs_path])
+
+	video2imgs(video_path, full_imgs_path, ext = 'png')
+	input_img_list = sorted(glob(os.path.join(full_imgs_path, '*.[jpJP][pnPN]*[gG]')))
+
+	frames = read_imgs(input_img_list)
+	face_det_results = face_detect(frames, face_det_batch_size, pads, nosmooth)
+	coord_list = []
+	idx = 0
+	for frame,coords in face_det_results:
+		#x1, y1, x2, y2 = bbox
+		resized_crop_frame = cv2.resize(frame,(img_size, img_size)) #,interpolation = cv2.INTER_LANCZOS4)
+		cv2.imwrite(f"{face_imgs_path}/{idx:08d}.png", resized_crop_frame)
+		coord_list.append(coords)
+		idx = idx + 1
+
+	with open(coords_path, 'wb') as f:
+		pickle.dump(coord_list, f)
+	if replace:
+		os.system(f"rm -rf {os.path.abspath(os.path.curdir)}/data/avatars/{avatar_id}; mv -f {os.path.abspath(os.path.curdir)}/results/avatars/{avatar_id} {os.path.abspath(os.path.curdir)}/data/avatars/")
+
+
 if __name__ == "__main__":
-    avatar_path = f"./results/avatars/{args.avatar_id}"
-    full_imgs_path = f"{avatar_path}/full_imgs" 
-    face_imgs_path = f"{avatar_path}/face_imgs" 
-    coords_path = f"{avatar_path}/coords.pkl"
-    osmakedirs([avatar_path,full_imgs_path,face_imgs_path])
-    print(args)
+	parser = argparse.ArgumentParser(description='Inference code to lip-sync videos in the wild using Wav2Lip models')
+	parser.add_argument('--avatar_id', default='wav2lip_avatar1', type=str)
+	parser.add_argument('--video_path', default='', type=str)
+	parser.add_argument('--img_size', default=96, type=int)
+	parser.add_argument('--nosmooth', default=False, action='store_true',
+						help='Prevent smoothing face detections over a short temporal window')
+	parser.add_argument('--pads', nargs='+', type=int, default=[0, 10, 0, 0],
+						help='Padding (top, bottom, left, right). Please adjust to include chin at least')
+	parser.add_argument('--face_det_batch_size', type=int,
+						help='Batch size for face detection', default=16)
+	args = parser.parse_args()
 
-    #if os.path.isfile(args.video_path):
-    video2imgs(args.video_path, full_imgs_path, ext = 'png')
-    input_img_list = sorted(glob(os.path.join(full_imgs_path, '*.[jpJP][pnPN]*[gG]')))
-
-    frames = read_imgs(input_img_list)
-    face_det_results = face_detect(frames) 
-    coord_list = []
-    idx = 0
-    for frame,coords in face_det_results:        
-        #x1, y1, x2, y2 = bbox
-        resized_crop_frame = cv2.resize(frame,(args.img_size, args.img_size)) #,interpolation = cv2.INTER_LANCZOS4)
-        cv2.imwrite(f"{face_imgs_path}/{idx:08d}.png", resized_crop_frame)
-        coord_list.append(coords)
-        idx = idx + 1
-	
-    with open(coords_path, 'wb') as f:
-        pickle.dump(coord_list, f)
+	print(args)
+	main(args.avatar_id, args.video_path, args.img_size, args.nosmooth, args.pads, args.face_det_batch_size)

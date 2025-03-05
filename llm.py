@@ -7,15 +7,20 @@ def llm_response(message,nerfreal:BaseReal):
     start = time.perf_counter()
     from openai import OpenAI
     client = OpenAI(
-        # 如果您没有配置环境变量，请在此处用您的API Key进行替换
-        api_key=os.getenv("DASHSCOPE_API_KEY"),
-        # 填写DashScope SDK的base_url
-        base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+        # 此为默认路径，您可根据业务所在地域进行配置
+        base_url="https://ark.cn-beijing.volces.com/api/v3",
+        # 从环境变量中获取您的 API Key。此为默认方式，您可根据需要进行修改
+        api_key="3b10c0a3-faa4-4219-a07c-071268eb9ecc",
+
+        # # 如果您没有配置环境变量，请在此处用您的API Key进行替换
+        # api_key=os.getenv("DASHSCOPE_API_KEY"),
+        # # 填写DashScope SDK的base_url
+        # base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
     )
     end = time.perf_counter()
     logger.info(f"llm Time init: {end-start}s")
     completion = client.chat.completions.create(
-        model="qwen-plus",
+        model="ep-20250304111532-kpfv4",
         messages=[{'role': 'system', 'content': 'You are a helpful assistant.'},
                   {'role': 'user', 'content': message}],
         stream=True,

@@ -35,7 +35,7 @@ import soundfile as sf
 import av
 from fractions import Fraction
 
-from ttsreal import EdgeTTS,VoitsTTS,XTTS,CosyVoiceTTS,FishTTS,TencentTTS
+from ttsreal import EdgeTTS, VoitsTTS, XTTS, CosyVoiceTTS, FishTTS, TencentTTS, DYTTS
 from logger import logger
 
 from tqdm import tqdm
@@ -66,6 +66,8 @@ class BaseReal:
             self.tts = FishTTS(opt,self)
         elif opt.tts == "tencent":
             self.tts = TencentTTS(opt,self)
+        elif opt.tts == "dy":
+            self.tts = DYTTS(opt,self)
         
         self.speaking = False
 
