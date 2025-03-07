@@ -649,6 +649,7 @@ class DYTTS(BaseTTS):
 
         ws = websocket.create_connection(api_url, header=header, skip_utf8_validation=True)
         ws.send(full_client_request, opcode=ABNF.OPCODE_BINARY)
+        all_data = b''
         while True:
             code, res = ws.recv_data()
             print("--------------------------- response ---------------------------")
@@ -682,10 +683,14 @@ class DYTTS(BaseTTS):
                     sequence_number = int.from_bytes(payload[:4], "big", signed=True)
                     payload_size = int.from_bytes(payload[4:8], "big", signed=False)
                     payload = payload[8:]
-                    yield payload
+                    all_data += payload
+                    while len(all_data) >= 6400:
+                        yield all_data[:6400]
+                        all_data = all_data[6400:]
                     print(f"             Sequence number: {sequence_number}")
                     print(f"                Payload size: {payload_size} bytes")
                 if sequence_number < 0:
+                    yield all_data
                     return
                 else:
                     return
