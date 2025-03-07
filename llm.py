@@ -21,7 +21,8 @@ def llm_response(message,nerfreal:BaseReal):
     logger.info(f"llm Time init: {end-start}s")
     completion = client.chat.completions.create(
         model="bot-20250304111658-v8z2f",
-        messages=[{'role': 'system', 'content': 'You are a helpful assistant.'},
+        messages=[
+            # {'role': 'system', 'content': 'You are a helpful assistant.'},
                   {'role': 'user', 'content': message}],
         stream=True,
         # 通过以下设置，在流式输出的最后一行展示token使用信息
