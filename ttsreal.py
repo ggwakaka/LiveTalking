@@ -18,6 +18,8 @@ from __future__ import annotations
 
 import gzip
 import time
+import traceback
+
 import numpy as np
 import soundfile as sf
 import resampy
@@ -615,7 +617,10 @@ class DYTTS(BaseTTS):
 
     def txt_to_audio(self, msg):
         text, textevent = msg
-        self.stream_tts(self.dy_voice(text), msg)
+        try:
+            self.stream_tts(self.dy_voice(text), msg)
+        except Exception as e:
+            traceback.print_tb(e.__traceback__)
 
     def dy_voice(self, text):
         submit_request_json = {
