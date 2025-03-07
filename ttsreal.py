@@ -629,7 +629,11 @@ class DYTTS(BaseTTS):
             },
             "audio": {
                 "voice_type": voice_type,
+                "encoding": "pcm",
                 "rate": 16000,
+                "speed_ratio": 1.0,
+                "volume_ratio": 1.0,
+                "pitch_ratio": 1.0,
             },
             "request": {
                 "reqid": str(uuid.uuid4()),
@@ -684,9 +688,9 @@ class DYTTS(BaseTTS):
                     payload_size = int.from_bytes(payload[4:8], "big", signed=False)
                     payload = payload[8:]
                     all_data += payload
-                    while len(all_data) >= 6400:
-                        yield all_data[:6400]
-                        all_data = all_data[6400:]
+                    while len(all_data) >= 3200:
+                        yield all_data[:3200]
+                        all_data = all_data[3200:]
                     print(f"             Sequence number: {sequence_number}")
                     print(f"                Payload size: {payload_size} bytes")
                 if sequence_number < 0:
