@@ -6,22 +6,33 @@
     <script src="./jessibuca.js"></script>
   <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
     <style>
-        .root {
-            display: flex;
-            place-content: center;
-            margin-top: 3rem;
-        }
+
+
+
+
+            html,body,#root {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            #root {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
 
         .container-shell {
             backdrop-filter: blur(5px);
             background: hsla(0, 0%, 50%, 0.5);
             padding: 30px 4px 10px 4px;
-            /* border: 2px solid black; */
-            width: auto;
             position: relative;
+            width: 80%;
+            height: 80%;
             border-radius: 5px;
             box-shadow: 0 10px 20px;
         }
+
 
         .container-shell:before {
             content: "DH Player";
@@ -31,83 +42,32 @@
             left: 10px;
             text-shadow: 1px 1px black;
         }
-
-        #container {
-            background: rgba(13, 14, 27, 0.7);
-            width: 640px;
-            height: 398px;
-        }
-
-        .input {
-            display: flex;
-            margin-top: 10px;
-            color: white;
-            place-content: stretch;
-        }
-
-        .input2 {
-            bottom: 0px;
-        }
-
-        .input input {
-            flex: auto;
-        }
-
-        .err {
-            position: absolute;
-            top: 40px;
-            left: 10px;
-            color: red;
-        }
-
-        .option {
-            position: absolute;
-            top: 4px;
-            right: 10px;
-            display: flex;
-            place-content: center;
-            font-size: 12px;
-        }
-
-        .option span {
-            color: white;
-        }
-
-        .page {
-            background: url('./bg.jpg');
-            background-repeat: no-repeat;
-            background-position: top;
-        }
-
-        @media (max-width: 720px) {
             #container {
-                width: 90vw;
-                height: 52.7vw;
+                background: rgba(13, 14, 27, 0.7);
+                width: 100%;
+                height: 80%;
             }
-        }
     </style>
 </head>
-<body class="page">
-<div class="root">
-    <div class="container-shell">
+<body>
+    <div id="root">
+        <div class="container-shell">
+
         <div id="container"></div>
-        <div class="input">
+        <div>
             <button id="play">播放</button>
             <button id="pause" style="display: none">停止</button>
-        </div>
-        <div class="input" style="line-height: 30px">
             <button id="destroy">销毁</button>
         </div>
 
         <form class="form-inline" id="echo-form">
           <div class="form-group">
-            <textarea cols="2" rows="3" style="width:600px;height:50px;" class="form-control" id="message">test</textarea>
+            <textarea cols="2" rows="3" style="width:80%;height:50px;" class="form-control" id="message">test</textarea>
           </div>
           <button type="submit" class="btn btn-default">Send</button>
         </form>
-
+        </div>
     </div>
-</div>
 
 <script>
     var $player = document.getElementById('play');
@@ -173,6 +133,15 @@
         }
         create();
     })
+
+    //回车提交表单
+    $('#message').keypress(function(e) {
+        if (e.which === 13) {
+		    e.preventDefault();
+            $('#echo-form').submit();
+        }
+    });
+
 	  $('#echo-form').on('submit', function(e) {
 		e.preventDefault();
 		var message = $('#message').val();
@@ -189,7 +158,9 @@
 				method: 'POST'
 		});
 		//ws.send(message);
-		$('#message').val('');
+          setTimeout(function(){
+            $('#message').val('');
+          }, 200);
 		});
 </script>
 
