@@ -8,7 +8,7 @@ def llm_response(message,nerfreal:BaseReal):
     from openai import OpenAI
     client = OpenAI(
         # 此为默认路径，您可根据业务所在地域进行配置
-        base_url="https://ark.cn-beijing.volces.com/api/v3",
+        base_url="https://ark.cn-beijing.volces.com/api/v3/bots",
         # 从环境变量中获取您的 API Key。此为默认方式，您可根据需要进行修改
         api_key="3b10c0a3-faa4-4219-a07c-071268eb9ecc",
 
@@ -20,7 +20,7 @@ def llm_response(message,nerfreal:BaseReal):
     end = time.perf_counter()
     logger.info(f"llm Time init: {end-start}s")
     completion = client.chat.completions.create(
-        model="ep-20250304111532-kpfv4",
+        model="bot-20250304111658-v8z2f",
         messages=[{'role': 'system', 'content': 'You are a helpful assistant.'},
                   {'role': 'user', 'content': message}],
         stream=True,
