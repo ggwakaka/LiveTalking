@@ -644,7 +644,7 @@ class DYTTS(BaseTTS):
         full_client_request = bytearray(b'\x11\x10\x11\x00')
         full_client_request.extend((len(payload_bytes)).to_bytes(4, 'big'))  # payload size(4 bytes)
         full_client_request.extend(payload_bytes)  # payload
-        logger.info("request tts for : ", text)
+        logger.info(f"request tts for : {text}")
         header = {"Authorization": f"Bearer; {token}"}
 
         ws = websocket.create_connection(api_url, header=header, skip_utf8_validation=True)
