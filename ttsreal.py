@@ -692,7 +692,7 @@ class DYTTS(BaseTTS):
                 if sequence_number < 0:
                     return
                 else:
-                    return
+                    continue
             elif message_type == 0xf:
                 code = int.from_bytes(payload[:4], "big", signed=False)
                 msg_size = int.from_bytes(payload[4:8], "big", signed=False)
