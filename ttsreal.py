@@ -607,7 +607,7 @@ MESSAGE_COMPRESSIONS = {0: "no compression", 1: "gzip", 15: "custom compression 
 appid = "9050650716"
 token = "nd8USRaoocU1Rmc17Nx6PcWXUDafTcLI"
 cluster = "volcano_tts"
-voice_type = "BV705_streaming"
+voice_type = "BV002_streaming"
 api_url = "wss://openspeech.bytedance.com/api/v1/tts/ws_binary"
 class DYTTS(BaseTTS):
     def __init__(self, opt, parent):
@@ -630,9 +630,6 @@ class DYTTS(BaseTTS):
             "audio": {
                 "voice_type": voice_type,
                 "rate": 16000,
-                "speed_ratio": 1.0,
-                "volume_ratio": 1.0,
-                "pitch_ratio": 1.0,
             },
             "request": {
                 "reqid": str(uuid.uuid4()),
@@ -643,7 +640,8 @@ class DYTTS(BaseTTS):
         }
 
         payload_bytes = str.encode(json.dumps(submit_request_json))
-        full_client_request = bytearray(b'\x11\x10\x10\x00')
+        payload_bytes = gzip.compress(payload_bytes)  # if no compression, comment this line
+        full_client_request = bytearray(b'\x11\x10\x11\x00')
         full_client_request.extend((len(payload_bytes)).to_bytes(4, 'big'))  # payload size(4 bytes)
         full_client_request.extend(payload_bytes)  # payload
         logger.info("request tts for : ", text)
@@ -679,7 +677,7 @@ class DYTTS(BaseTTS):
             if message_type == 0xb:  # audio-only server response
                 if message_type_specific_flags == 0:  # no sequence number as ACK
                     print("                Payload size: 0")
-                    return
+                    continue
                 else:
                     sequence_number = int.from_bytes(payload[:4], "big", signed=True)
                     payload_size = int.from_bytes(payload[4:8], "big", signed=False)
