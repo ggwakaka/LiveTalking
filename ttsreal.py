@@ -606,7 +606,7 @@ MESSAGE_COMPRESSIONS = {0: "no compression", 1: "gzip", 15: "custom compression 
 
 appid = "9050650716"
 token = "nd8USRaoocU1Rmc17Nx6PcWXUDafTcLI"
-cluster = "volcano_tts"
+cluster = "volcano_icl"
 voice_type = "S_jR7Aw1Vk1"
 api_url = "wss://openspeech.bytedance.com/api/v1/tts/ws_binary"
 class DYTTS(BaseTTS):
