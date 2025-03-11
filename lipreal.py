@@ -69,6 +69,9 @@ def load_model(path):
 	return model.eval()
 
 def load_avatar(avatar_id):
+    if not os.path.exists(f"./data/avatars/{avatar_id}"):
+        logger.info(f"use default avatar")
+        avatar_id = 'wav2lip256_avatar0'
     avatar_path = f"./data/avatars/{avatar_id}"
     full_imgs_path = f"{avatar_path}/full_imgs" 
     face_imgs_path = f"{avatar_path}/face_imgs" 

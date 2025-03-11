@@ -56,6 +56,7 @@
 
         <div id="container"></div>
         <div>
+            <input id="sessionid" placeholder="用户ID">
             <button id="play">播放</button>
             <button id="pause" style="display: none">停止</button>
             <button id="destroy">销毁</button>
@@ -115,7 +116,14 @@
     create();
 
     $player.addEventListener('click', function () {
-        jessibuca.play("http://"+window.location.hostname+":8080/live/livestream.flv");
+
+        var sessionid = parseInt(document.getElementById('sessionid').value)
+          if (isNaN(sessionid)) {
+            alert('请输入用户ID');
+            return;
+          }
+
+        jessibuca.play("http://"+window.location.hostname+`:8080/live/livestream${sessionid}.flv`);
         $player.style.display = 'none';
         $pause.style.display = 'inline-block';
         $destroy.style.display = 'inline-block';
@@ -145,6 +153,12 @@
 
 	  $('#echo-form').on('submit', function(e) {
 		e.preventDefault();
+        var sessionid = parseInt(document.getElementById('sessionid').value)
+          if (isNaN(sessionid)) {
+            alert('请输入用户ID');
+            return;
+          }
+
 		var message = $('#message').val();
 		console.log('Sending: ' + message);
 		fetch('/human', {
@@ -152,6 +166,7 @@
 					text: message,
 					type: 'chat',
                     interrupt: true,
+                    sessionid,
 				}),
 				headers: {
 					'Content-Type': 'application/json'

@@ -16,6 +16,7 @@
 ###############################################################################
 import sys
 
+from asgiref.sync import sync_to_async
 # server.py
 from flask import Flask, render_template,send_from_directory,request, jsonify
 from flask_sockets import Sockets
@@ -53,8 +54,6 @@ app = Flask(__name__)
 nerfreals:Dict[int, BaseReal] = {} #sessionid:BaseReal
 opt = None
 model = None
-avatar = None
-        
 
 #####webrtc###############################
 pcs = set()
@@ -67,6 +66,8 @@ def randN(N)->int:
 
 def build_nerfreal(sessionid:int)->BaseReal:
     opt.sessionid=sessionid
+    from lipreal import load_avatar
+    avatar = load_avatar(f"wav2lip256_avatar{sessionid}")
     if opt.model == 'wav2lip':
         from lipreal import LipReal
         nerfreal = LipReal(opt,model,avatar)
@@ -137,6 +138,16 @@ async def human(request):
     params = await request.json()
 
     sessionid = params.get('sessionid',0)
+    logger.info(f'sessionid={sessionid}')
+
+    if sessionid not in nerfreals:
+        return web.Response(
+            content_type="application/json",
+            text=json.dumps(
+                {"code": -1, "data":"sessionid not exist"}
+            ),
+        )
+
     if params.get('interrupt'):
         nerfreals[sessionid].flush_talk()
 
@@ -208,6 +219,9 @@ async def record(request):
 
 async def upload(request):
     form = await request.post()
+    sessionid = int(form.get('sessionid', 0))
+    logger.info(f'sessionid={sessionid}')
+
     fileobj = form["file"]
     filebytes = fileobj.file.read()
     filename = fileobj.filename
@@ -216,9 +230,14 @@ async def upload(request):
     with open(file_temp_path, "wb") as f:
         f.write(filebytes)
     from wav2lip.genavatar import main
-    main("wav2lip256_avatar1", file_temp_path, 256, replace=True)
-    global avatar
-    avatar = load_avatar(opt.avatar_id)
+
+    await sync_to_async(main)(f"wav2lip256_avatar{sessionid}", file_temp_path, 256, replace=True)
+
+    if sessionid in nerfreals:
+        await nerfreals[sessionid].pc.close()
+        push_url = opt.push_url + str(sessionid)
+        await run(push_url, sessionid)
+
     return web.Response(
         content_type="application/json",
         text=json.dumps(
@@ -254,12 +273,13 @@ async def post(url,data):
         logger.info(f'Error: {e}')
 
 async def run(push_url,sessionid):
+    logger.info(f'push_url={push_url}, sessionid={sessionid}')
     nerfreal = await asyncio.get_event_loop().run_in_executor(None, build_nerfreal,sessionid)
     nerfreals[sessionid] = nerfreal
 
     pc = RTCPeerConnection()
     pcs.add(pc)
-
+    nerfreal.pc=pc
     @pc.on("connectionstatechange")
     async def on_connectionstatechange():
         logger.info("Connection state is %s" % pc.connectionState)
@@ -270,6 +290,7 @@ async def run(push_url,sessionid):
     player = HumanPlayer(nerfreals[sessionid])
     audio_sender = pc.addTrack(player.audio)
     video_sender = pc.addTrack(player.video)
+
 
     await pc.setLocalDescription(await pc.createOffer())
     answer = await post(push_url,pc.localDescription.sdp)
@@ -428,8 +449,7 @@ if __name__ == '__main__':
     if opt.model == 'ernerf':       
         from nerfreal import NeRFReal,load_model,load_avatar
         model = load_model(opt)
-        avatar = load_avatar(opt) 
-        
+
         # we still need test_loader to provide audio features for testing.
         # for k in range(opt.max_session):
         #     opt.sessionid=k
@@ -439,7 +459,6 @@ if __name__ == '__main__':
         from musereal import MuseReal,load_model,load_avatar,warm_up
         logger.info(opt)
         model = load_model()
-        avatar = load_avatar(opt.avatar_id) 
         warm_up(opt.batch_size,model)      
         # for k in range(opt.max_session):
         #     opt.sessionid=k
@@ -449,7 +468,6 @@ if __name__ == '__main__':
         from lipreal import LipReal,load_model,load_avatar,warm_up
         logger.info(opt)
         model = load_model("./models/wav2lip.pth")
-        avatar = load_avatar(opt.avatar_id)
         warm_up(opt.batch_size,model,256)
         # for k in range(opt.max_session):
         #     opt.sessionid=k
@@ -506,9 +524,7 @@ if __name__ == '__main__':
         loop.run_until_complete(site.start())
         if opt.transport=='rtcpush':
             for k in range(opt.max_session):
-                push_url = opt.push_url
-                if k!=0:
-                    push_url = opt.push_url+str(k)
+                push_url = opt.push_url+str(k)
                 loop.run_until_complete(run(push_url,k))
         loop.run_forever()    
     #Thread(target=run_server, args=(web.AppRunner(appasync),)).start()
