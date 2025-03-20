@@ -260,7 +260,7 @@ class VoitsTTS(BaseTTS):
             'ref_audio_path':reffile,
             'prompt_text':reftext,
             'prompt_lang':language,
-            'media_type':'ogg',
+            'media_type':'wav',
             'streaming_mode':True
         }
         # req["text"] = text
