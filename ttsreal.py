@@ -242,8 +242,10 @@ class VoitsTTS(BaseTTS):
         self.stream_tts(
             self.gpt_sovits(
                 text,
-                self.opt.REF_FILE,  
-                self.opt.REF_TEXT,
+                f"/sounds/{self.opt.sessionid}.wav",
+                "这是一段用于音色克隆的音频数据",
+                # self.opt.REF_FILE,
+                # self.opt.REF_TEXT,
                 "zh", #en args.language,
                 self.opt.TTS_SERVER, #"http://127.0.0.1:5000", #args.server_url,
             ),

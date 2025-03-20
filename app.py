@@ -246,6 +246,26 @@ async def upload(request):
     )
 
 
+async def upload_sound(request):
+    form = await request.post()
+    sessionid = int(form.get('sessionid', 0))
+    logger.info(f'sessionid={sessionid}')
+
+    fileobj = form["file"]
+    filebytes = fileobj.file.read()
+    file_temp_path = f"./data/sounds/{sessionid}.wav"
+    # 存为临时文件
+    with open(file_temp_path, "wb") as f:
+        f.write(filebytes)
+
+    return web.Response(
+        content_type="application/json",
+        text=json.dumps(
+            {"code": 0, "msg": "ok"}
+        ),
+    )
+
+
 async def is_speaking(request):
     params = await request.json()
 
@@ -496,6 +516,7 @@ if __name__ == '__main__':
     appasync.router.add_post("/record", record)
     appasync.router.add_post("/is_speaking", is_speaking)
     appasync.router.add_post("/upload", upload)
+    appasync.router.add_post("/upload_sound", upload_sound)
     appasync.router.add_static('/',path='web')
 
     # Configure default CORS settings.
