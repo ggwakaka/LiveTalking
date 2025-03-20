@@ -16,7 +16,6 @@
 ###############################################################################
 import sys
 
-from asgiref.sync import sync_to_async
 # server.py
 from flask import Flask, render_template,send_from_directory,request, jsonify
 from flask_sockets import Sockets
@@ -231,7 +230,8 @@ async def upload(request):
         f.write(filebytes)
     from wav2lip.genavatar import main
 
-    await sync_to_async(main)(f"wav2lip256_avatar{sessionid}", file_temp_path, 256, replace=True)
+    await asyncio.get_event_loop().run_in_executor(None, main,f"wav2lip256_avatar{sessionid}", file_temp_path, 256, replace=True)
+    # await sync_to_async(main)(f"wav2lip256_avatar{sessionid}", file_temp_path, 256, replace=True)
 
     if sessionid in nerfreals:
         await nerfreals[sessionid].pc.close()
