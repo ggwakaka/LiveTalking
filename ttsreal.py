@@ -243,7 +243,7 @@ class VoitsTTS(BaseTTS):
             self.gpt_sovits(
                 text,
                 f"/sounds/{self.opt.sessionid}.wav",
-                "这是一段用于音色克隆的音频数据",
+                "信号机管理平台是一种基于计算机网络",
                 # self.opt.REF_FILE,
                 # self.opt.REF_TEXT,
                 "zh", #en args.language,
