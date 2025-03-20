@@ -284,7 +284,7 @@ class VoitsTTS(BaseTTS):
                 
             first = True
         
-            for chunk in res.iter_content(chunk_size=None): #12800 1280 32K*20ms*2
+            for chunk in res.iter_content(chunk_size=12800): #12800 1280 32K*20ms*2
                 logger.info('chunk len:%d',len(chunk))
                 if first:
                     end = time.perf_counter()
@@ -317,10 +317,10 @@ class VoitsTTS(BaseTTS):
         first = True
         for chunk in audio_stream:
             if chunk is not None and len(chunk)>0:          
-                #stream = np.frombuffer(chunk, dtype=np.int16).astype(np.float32) / 32767
-                #stream = resampy.resample(x=stream, sr_orig=32000, sr_new=self.sample_rate)
-                byte_stream=BytesIO(chunk)
-                stream = self.__create_bytes_stream(byte_stream)
+                stream = np.frombuffer(chunk, dtype=np.int16).astype(np.float32) / 32767
+                stream = resampy.resample(x=stream, sr_orig=32000, sr_new=self.sample_rate)
+                # byte_stream=BytesIO(chunk)
+                # stream = self.__create_bytes_stream(byte_stream)
                 streamlen = stream.shape[0]
                 idx=0
                 while streamlen >= self.chunk:
