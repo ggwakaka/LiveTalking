@@ -230,7 +230,7 @@ async def upload(request):
         f.write(filebytes)
     from wav2lip.genavatar import main
 
-    await asyncio.get_event_loop().run_in_executor(None, main,f"wav2lip256_avatar{sessionid}", file_temp_path, 256, replace=True)
+    await asyncio.get_event_loop().run_in_executor(None, main,f"wav2lip256_avatar{sessionid}", file_temp_path, 256, False, None, 16, True)
     # await sync_to_async(main)(f"wav2lip256_avatar{sessionid}", file_temp_path, 256, replace=True)
 
     if sessionid in nerfreals:
