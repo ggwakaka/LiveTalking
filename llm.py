@@ -38,17 +38,24 @@ def llm_response(message,nerfreal:BaseReal):
                 logger.info(f"llm Time to first chunk: {end-start}s")
                 first = False
             msg = chunk.choices[0].delta.content
-            lastpos=0
-            #msglist = re.split('[,.!;:，。！?]',msg)
-            for i, char in enumerate(msg):
-                if char in ",.!;:，。！？：；" :
-                    result = result+msg[lastpos:i+1]
-                    lastpos = i+1
-                    if len(result)>10:
-                        logger.info(result)
-                        nerfreal.put_msg_txt(result)
-                        result=""
-            result = result+msg[lastpos:]
+            # lastpos=0
+            # #msglist = re.split('[,.!;:，。！?]',msg)
+            # for i, char in enumerate(msg):
+            #     if char in ",.!;:，。！？：；" :
+            #         result = result+msg[lastpos:i+1]
+            #         lastpos = i+1
+            #         if len(result)>10:
+            #             logger.info(result)
+            #             nerfreal.put_msg_txt(result)
+            #             result=""
+            # result = result+msg[lastpos:]
+            result = result + msg[0:]
+            while len(result)>10:
+                pos = 10
+                logger.info(result[:pos])
+                nerfreal.put_msg_txt(result[:pos])
+                result = result[pos+1:]
+
     end = time.perf_counter()
     logger.info(f"llm Time to last chunk: {end-start}s")
     nerfreal.put_msg_txt(result)    
