@@ -278,6 +278,24 @@ async def is_speaking(request):
     )
 
 
+async def start(request):
+    form = await request.post()
+    sessionid = int(form.get('sessionid', 0))
+    logger.info(f'sessionid={sessionid}')
+
+    if sessionid in nerfreals:
+        await nerfreals[sessionid].pc.close()
+    push_url = opt.push_url + str(sessionid)
+    await run(push_url, sessionid)
+
+    return web.Response(
+        content_type="application/json",
+        text=json.dumps(
+            {"code": 0, "msg": "ok"}
+        ),
+    )
+
+
 async def on_shutdown(app):
     # close peer connections
     coros = [pc.close() for pc in pcs]
@@ -515,6 +533,7 @@ if __name__ == '__main__':
     appasync.router.add_post("/set_audiotype", set_audiotype)
     appasync.router.add_post("/record", record)
     appasync.router.add_post("/is_speaking", is_speaking)
+    appasync.router.add_post("/start", start)
     appasync.router.add_post("/upload", upload)
     appasync.router.add_post("/upload_sound", upload_sound)
     appasync.router.add_static('/',path='web')
@@ -543,10 +562,10 @@ if __name__ == '__main__':
         loop.run_until_complete(runner.setup())
         site = web.TCPSite(runner, '0.0.0.0', opt.listenport)
         loop.run_until_complete(site.start())
-        if opt.transport=='rtcpush':
-            for k in range(opt.max_session):
-                push_url = opt.push_url+str(k)
-                loop.run_until_complete(run(push_url,k))
+        # if opt.transport=='rtcpush':
+        #     for k in range(opt.max_session):
+        #         push_url = opt.push_url+str(k)
+        #         loop.run_until_complete(run(push_url,k))
         loop.run_forever()    
     #Thread(target=run_server, args=(web.AppRunner(appasync),)).start()
     run_server(web.AppRunner(appasync))
