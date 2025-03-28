@@ -304,6 +304,31 @@ async def start(request):
     )
 
 
+async def stop(request):
+    form = await request.json()
+    sessionid = int(form.get('sessionid', 0))
+    logger.info(f'sessionid={sessionid}')
+    if sessionid == 0:
+        return web.Response(
+            status=400,
+            content_type="application/json",
+            text=json.dumps(
+                {"code": -1, "msg": "ok"}
+            ),
+        )
+
+    if sessionid in nerfreals:
+        await nerfreals[sessionid].pc.close()
+
+    return web.Response(
+        content_type="application/json",
+        text=json.dumps(
+            {"code": 0, "msg": "ok"}
+        ),
+    )
+
+
+
 async def on_shutdown(app):
     # close peer connections
     coros = [pc.close() for pc in pcs]
@@ -542,6 +567,7 @@ if __name__ == '__main__':
     appasync.router.add_post("/record", record)
     appasync.router.add_post("/is_speaking", is_speaking)
     appasync.router.add_post("/start", start)
+    appasync.router.add_post("/stop", stop)
     appasync.router.add_post("/upload", upload)
     appasync.router.add_post("/upload_sound", upload_sound)
     appasync.router.add_static('/',path='web')
