@@ -141,6 +141,7 @@ async def human(request):
 
     if sessionid not in nerfreals:
         return web.Response(
+            status=400,
             content_type="application/json",
             text=json.dumps(
                 {"code": -1, "data":"sessionid not exist"}
