@@ -136,7 +136,7 @@ async def offer(request):
 async def human(request):
     params = await request.json()
 
-    sessionid = params.get('sessionid',0)
+    sessionid = int(params.get('sessionid',0))
     logger.info(f'sessionid={sessionid}')
 
     if sessionid not in nerfreals:
