@@ -281,6 +281,7 @@ async def is_speaking(request):
 async def start(request):
     form = await request.post()
     sessionid = int(form.get('sessionid', 0))
+    logger.info(json.dumps(form))
     logger.info(f'sessionid={sessionid}')
     if sessionid == 0:
         return web.Response(
