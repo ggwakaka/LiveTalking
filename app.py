@@ -369,6 +369,7 @@ async def run(push_url,sessionid):
 
     await player.audio.event.wait()
     await player.video.event.wait()
+    await asyncio.sleep(2)
 
 
 ##########################################
