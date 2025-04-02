@@ -367,7 +367,6 @@ async def run(push_url,sessionid):
     answer = await post(push_url,pc.localDescription.sdp)
     await pc.setRemoteDescription(RTCSessionDescription(sdp=answer,type='answer'))
 
-    await player.audio.event.wait()
     await player.video.event.wait()
     await asyncio.sleep(2)
 
