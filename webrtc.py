@@ -55,6 +55,7 @@ class PlayerStreamTrack(MediaStreamTrack):
         self.kind = kind
         self._player = player
         self._queue = asyncio.Queue()
+        self.event = asyncio.Event()
         self.timelist = [] #记录最近包的时间戳
         if self.kind == 'video':
             self.framecount = 0
@@ -140,6 +141,8 @@ class PlayerStreamTrack(MediaStreamTrack):
                 mylogger.info(f"------actual avg final fps:{self.framecount/self.totaltime:.4f}")
                 self.framecount = 0
                 self.totaltime=0
+        if not self.event.is_set():
+            self.event.set()
         return frame
     
     def stop(self):

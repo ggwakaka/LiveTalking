@@ -363,10 +363,14 @@ async def run(push_url,sessionid):
     audio_sender = pc.addTrack(player.audio)
     video_sender = pc.addTrack(player.video)
 
-
     await pc.setLocalDescription(await pc.createOffer())
     answer = await post(push_url,pc.localDescription.sdp)
     await pc.setRemoteDescription(RTCSessionDescription(sdp=answer,type='answer'))
+
+    await player.audio.event.wait()
+    await player.audio.video.wait()
+
+
 ##########################################
 # os.environ['MKL_SERVICE_FORCE_INTEL'] = '1'
 # os.environ['MULTIPROCESSING_METHOD'] = 'forkserver'                                                    
