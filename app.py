@@ -250,14 +250,18 @@ async def upload(request):
 async def upload_sound(request):
     form = await request.post()
     sessionid = int(form.get('sessionid', 0))
+    text = form.get('text', "未知")
     logger.info(f'sessionid={sessionid}')
 
     fileobj = form["file"]
     filebytes = fileobj.file.read()
     file_temp_path = f"./data/sounds/{sessionid}.wav"
-    # 存为临时文件
     with open(file_temp_path, "wb") as f:
         f.write(filebytes)
+
+    file_temp_path = f"./data/sounds/{sessionid}.txt"
+    with open(file_temp_path, "wb") as f:
+        f.write(text.encode('utf-8'))
 
     return web.Response(
         content_type="application/json",
@@ -368,7 +372,7 @@ async def run(push_url,sessionid):
     await pc.setRemoteDescription(RTCSessionDescription(sdp=answer,type='answer'))
 
     await player.video.event.wait()
-    await asyncio.sleep(2)
+    await asyncio.sleep(4)
 
 
 ##########################################

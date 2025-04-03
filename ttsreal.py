@@ -237,13 +237,21 @@ class FishTTS(BaseTTS):
 
 ###########################################################################################
 class VoitsTTS(BaseTTS):
+
+    def __init__(self, opt, parent:BaseReal):
+        super().__init__(opt, parent)
+        self.text = ""
+        with open(f"/sounds/{self.opt.sessionid}.txt", 'rb') as f:
+            self.text = str(f.read(), 'utf-8')
+
+
     def txt_to_audio(self,msg): 
         text,textevent = msg
         self.stream_tts(
             self.gpt_sovits(
                 text,
                 f"/sounds/{self.opt.sessionid}.wav",
-                "信号机管理平台是一种基于计算机网络",
+                self.text,
                 # self.opt.REF_FILE,
                 # self.opt.REF_TEXT,
                 "zh", #en args.language,
