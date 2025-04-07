@@ -323,6 +323,7 @@ async def stop(request):
         )
 
     if sessionid in nerfreals:
+        del nerfreals[sessionid]
         await nerfreals[sessionid].pc.close()
 
     return web.Response(
@@ -332,6 +333,29 @@ async def stop(request):
         ),
     )
 
+async def is_start(request):
+    form = await request.json()
+    sessionid = int(form.get('sessionid', 0))
+    logger.info(f'sessionid={sessionid}')
+    if sessionid == 0:
+        return web.Response(
+            status=400,
+            content_type="application/json",
+            text=json.dumps(
+                {"code": -1, "msg": "ok"}
+            ),
+        )
+
+    result = False
+    if sessionid in nerfreals:
+        result = True
+
+    return web.Response(
+        content_type="application/json",
+        text=json.dumps(
+            {"code": 0, "data": result}
+        ),
+    )
 
 
 async def on_shutdown(app):
@@ -577,6 +601,7 @@ if __name__ == '__main__':
     appasync.router.add_post("/is_speaking", is_speaking)
     appasync.router.add_post("/start", start)
     appasync.router.add_post("/stop", stop)
+    appasync.router.add_post("/is_start", is_start)
     appasync.router.add_post("/upload", upload)
     appasync.router.add_post("/upload_sound", upload_sound)
     appasync.router.add_static('/',path='web')
