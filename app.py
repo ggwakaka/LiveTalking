@@ -104,7 +104,8 @@ async def offer(request):
         if pc.connectionState == "failed":
             await pc.close()
             pcs.discard(pc)
-            del nerfreals[sessionid]
+            if sessionid in nerfreals:
+                del nerfreals[sessionid]
         if pc.connectionState == "closed":
             pcs.discard(pc)
             del nerfreals[sessionid]
