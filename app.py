@@ -326,8 +326,8 @@ async def stop(request):
         )
 
     if sessionid in nerfreals:
-        del nerfreals[sessionid]
         await nerfreals[sessionid].pc.close()
+        del nerfreals[sessionid]
 
     return web.Response(
         content_type="application/json",
