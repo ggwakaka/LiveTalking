@@ -85,12 +85,17 @@
     function create() {
         jessibuca = new Jessibuca({
             container: $container,
-            videoBuffer: 0.2, // 缓存时长
+            videoBuffer: 1.5, // 缓存时长
             isResize: true,
             text: "",
             loadingText: "加载中",
-            debug: false,
             showBandwidth: showOperateBtns, // 显示网速
+	
+  enableStashBuffer: true,  // 开启抗抖动缓冲
+  stashInitialSize: 0.5,    // 初始预缓冲 0.5 秒数据
+  dropDataThreshold: 2 * 1024 * 1024, // 内存占用超 2MB 时主动丢帧
+  debug: true,       // 开启调试日志
+
             operateBtns: {
                 fullscreen: showOperateBtns,
                 screenshot: showOperateBtns,

@@ -84,6 +84,7 @@ def face_detect(images, face_det_batch_size, pads, nosmooth):
 	del detector
 	return results 
 
+from logger import logger
 
 def main(avatar_id, video_path, img_size, nosmooth=False, pads=None, face_det_batch_size=16, replace=False):
 	if pads is None:
@@ -110,8 +111,12 @@ def main(avatar_id, video_path, img_size, nosmooth=False, pads=None, face_det_ba
 
 	with open(coords_path, 'wb') as f:
 		pickle.dump(coord_list, f)
+	logger.info("start replace")
 	if replace:
 		os.system(f"rm -rf {os.path.abspath(os.path.curdir)}/data/avatars/{avatar_id}; mv -f {os.path.abspath(os.path.curdir)}/results/avatars/{avatar_id} {os.path.abspath(os.path.curdir)}/data/avatars/")
+		import time
+		time.sleep(10)
+		logger.info("end replace")
 
 
 if __name__ == "__main__":

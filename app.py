@@ -230,14 +230,17 @@ async def upload(request):
     with open(file_temp_path, "wb") as f:
         f.write(filebytes)
     from wav2lip.genavatar import main
+    logger.info("start video split")
 
-    await asyncio.get_event_loop().run_in_executor(None, main,f"wav2lip256_avatar{sessionid}", file_temp_path, 256, False, None, 16, True)
-    # await sync_to_async(main)(f"wav2lip256_avatar{sessionid}", file_temp_path, 256, replace=True)
+#    await asyncio.get_event_loop().run_in_executor(None, main,f"wav2lip256_avatar{sessionid}", file_temp_path, 256, False, None, 16, True)
+    from asgiref.sync import sync_to_async
+    await sync_to_async(main)(f"wav2lip256_avatar{sessionid}", file_temp_path, 256, replace=True)
 
-    if sessionid in nerfreals:
-        await nerfreals[sessionid].pc.close()
-        push_url = opt.push_url + str(sessionid)
-        await run(push_url, sessionid)
+#    if sessionid in nerfreals:
+#        await nerfreals[sessionid].pc.close()
+#        push_url = opt.push_url + str(sessionid)
+#        await run(push_url, sessionid)
+    logger.info("end vudei split")
 
     return web.Response(
         content_type="application/json",

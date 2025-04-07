@@ -241,7 +241,7 @@ class VoitsTTS(BaseTTS):
     def __init__(self, opt, parent:BaseReal):
         super().__init__(opt, parent)
         self.text = ""
-        with open(f"/sounds/{self.opt.sessionid}.txt", 'rb') as f:
+        with open(f"./data/sounds/{self.opt.sessionid}.txt", 'rb') as f:
             self.text = str(f.read(), 'utf-8')
 
 
