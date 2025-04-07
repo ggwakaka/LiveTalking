@@ -247,6 +247,8 @@ class VoitsTTS(BaseTTS):
 
     def txt_to_audio(self,msg): 
         text,textevent = msg
+        if len(str(text).strip()) == 0:
+            return
         self.stream_tts(
             self.gpt_sovits(
                 text,
@@ -271,6 +273,9 @@ class VoitsTTS(BaseTTS):
             'media_type':'raw',
             'streaming_mode':True
         }
+        logger.info(f"send to tts:{text}")
+        import binascii
+        logger.info(binascii.hexlify(str(text).encode("utf-8")))
         # req["text"] = text
         # req["text_language"] = language
         # req["character"] = character
