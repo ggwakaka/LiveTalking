@@ -386,9 +386,10 @@ async def run(push_url,sessionid):
     @pc.on("connectionstatechange")
     async def on_connectionstatechange():
         logger.info("Connection state is %s" % pc.connectionState)
-        if pc.connectionState == "failed":
+        if pc.connectionState == "failed" or pc.connectionState == "closed":
             await pc.close()
             pcs.discard(pc)
+            del nerfreals[sessionid]
 
     player = HumanPlayer(nerfreals[sessionid])
     audio_sender = pc.addTrack(player.audio)
