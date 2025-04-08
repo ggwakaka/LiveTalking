@@ -145,7 +145,7 @@ class BaseReal:
     def notify(self,eventpoint):
         logger.info("notify:%s",eventpoint)
         if eventpoint["status"]=="end" and eventpoint["msgenvent"] is not None:
-            requests.post("", json={
+            requests.post("http://127.0.0.1:8000/api/dh/notify_video_message/", json={
                 "user_message_queue_id": eventpoint["msgenvent"].get("queueid", None),
                 "message_id":  eventpoint["msgenvent"].get("messageid", None),
                 "message": eventpoint["text"],
