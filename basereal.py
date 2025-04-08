@@ -17,6 +17,7 @@
 
 import math
 import torch
+import requests
 import numpy as np
 
 import subprocess
@@ -143,6 +144,12 @@ class BaseReal:
 
     def notify(self,eventpoint):
         logger.info("notify:%s",eventpoint)
+        if eventpoint["status"]=="end" and eventpoint["msgenvent"] is not None:
+            requests.post("", json={
+                "user_message_queue_id": eventpoint["msgenvent"].get("queueid", None),
+                "message_id":  eventpoint["msgenvent"].get("messageid", None),
+                "message": eventpoint["text"],
+            })
 
     def start_recording(self):
         """开始录制视频"""

@@ -153,7 +153,10 @@ async def human(request):
         nerfreals[sessionid].flush_talk()
 
     if params['type']=='echo':
-        nerfreals[sessionid].put_msg_txt(params['text'])
+        nerfreals[sessionid].put_msg_txt(params['text'], eventpoint={
+            "messageid": params.get('messageid', None),
+            "queueid": params.get('queueid', None),
+        })
     elif params['type']=='chat':
         res=await asyncio.get_event_loop().run_in_executor(None, llm_response, params['text'],nerfreals[sessionid])                         
         #nerfreals[sessionid].put_msg_txt(res)
