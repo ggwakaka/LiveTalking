@@ -21,6 +21,7 @@ from flask import Flask, render_template,send_from_directory,request, jsonify
 from flask_sockets import Sockets
 import base64
 import json
+import requests
 #import gevent
 #from gevent import pywsgi
 #from geventwebsocket.handler import WebSocketHandler
@@ -355,7 +356,13 @@ async def is_start(request):
 
     result = False
     if sessionid in nerfreals:
-        result = True
+        response = requests.get("http://127.0.0.1:1985/api/v1/streams")
+        if response.ok:
+            res = response.json()
+            if res.get("code", -1) == 0:
+                for stream in res.get("streams", []):
+                    if stream["name"].endswith(f"{sessionid}"):
+                        result = True
 
     return web.Response(
         content_type="application/json",
