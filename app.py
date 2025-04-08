@@ -393,7 +393,8 @@ async def run(push_url,sessionid):
         if pc.connectionState == "failed" or pc.connectionState == "closed":
             await pc.close()
             pcs.discard(pc)
-            del nerfreals[sessionid]
+            if sessionid in nerfreals:
+                del nerfreals[sessionid]
 
     player = HumanPlayer(nerfreals[sessionid])
     audio_sender = pc.addTrack(player.audio)
