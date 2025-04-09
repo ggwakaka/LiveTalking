@@ -320,7 +320,7 @@ async def start(request):
 async def stop(request):
     form = await request.json()
     sessionid = int(form.get('sessionid', 0))
-    logger.info(f'sessionid={sessionid}')
+    logger.info(f'sessionid={sessionid} stop')
     if sessionid == 0:
         return web.Response(
             status=400,
@@ -331,6 +331,7 @@ async def stop(request):
         )
 
     if sessionid in nerfreals:
+        logger.info(f'sessionid={sessionid} pc.close')
         await nerfreals[sessionid].pc.close()
         del nerfreals[sessionid]
 
