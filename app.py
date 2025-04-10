@@ -14,6 +14,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 ###############################################################################
+import os
 import sys
 
 # server.py
@@ -300,7 +301,7 @@ async def start(request):
             status=400,
             content_type="application/json",
             text=json.dumps(
-                {"code": -1, "msg": "ok"}
+                {"code": -1, "msg": "model is not found"}
             ),
         )
 
@@ -327,7 +328,7 @@ async def stop(request):
             status=400,
             content_type="application/json",
             text=json.dumps(
-                {"code": -1, "msg": "ok"}
+                {"code": -1, "msg": "model is not found"}
             ),
         )
 
@@ -352,7 +353,7 @@ async def is_start(request):
             status=400,
             content_type="application/json",
             text=json.dumps(
-                {"code": -1, "msg": "ok"}
+                {"code": -1, "msg": "model is not found"}
             ),
         )
 
@@ -366,6 +367,31 @@ async def is_start(request):
                     if stream["name"].endswith(f"{sessionid}"):
                         result = True
 
+    return web.Response(
+        content_type="application/json",
+        text=json.dumps(
+            {"code": 0, "data": result}
+        ),
+    )
+
+
+async def check_model(request):
+    form = await request.json()
+    sessionid = int(form.get('sessionid', 0))
+    logger.info(f'sessionid={sessionid} check_model')
+    if sessionid == 0:
+        return web.Response(
+            status=400,
+            content_type="application/json",
+            text=json.dumps(
+                {"code": -1, "msg": "model is not found"}
+            ),
+        )
+
+    result = False
+    if os.path.exists(f"./data/avatars/wav2lip256_avatar{sessionid}") \
+            and os.path.exists(f"./data/sounds/{sessionid}.txt"):
+        result = True
     return web.Response(
         content_type="application/json",
         text=json.dumps(
@@ -620,6 +646,7 @@ if __name__ == '__main__':
     appasync.router.add_post("/start", start)
     appasync.router.add_post("/stop", stop)
     appasync.router.add_post("/is_start", is_start)
+    appasync.router.add_post("/check_model", check_model)
     appasync.router.add_post("/upload", upload)
     appasync.router.add_post("/upload_sound", upload_sound)
     appasync.router.add_static('/',path='web')
