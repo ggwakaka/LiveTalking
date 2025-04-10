@@ -294,7 +294,7 @@ async def is_speaking(request):
 async def start(request):
     form = await request.json()
     sessionid = int(form.get('sessionid', 0))
-    logger.info(f'sessionid={sessionid}')
+    logger.info(f'sessionid={sessionid} start')
     if sessionid == 0:
         return web.Response(
             status=400,
@@ -305,6 +305,7 @@ async def start(request):
         )
 
     if sessionid in nerfreals:
+        logger.info(f'{sessionid} pc.close()')
         await nerfreals[sessionid].pc.close()
     push_url = opt.push_url + str(sessionid)
     await run(push_url, sessionid)
