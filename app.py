@@ -85,57 +85,57 @@ def build_nerfreal(sessionid)->BaseReal:
     return nerfreal
 
 #@app.route('/offer', methods=['POST'])
-async def offer(request):
-    params = await request.json()
-    offer = RTCSessionDescription(sdp=params["sdp"], type=params["type"])
-
-    if len(nerfreals) >= opt.max_session:
-        logger.info('reach max session')
-        return -1
-    sessionid = str(randN(6)) #len(nerfreals)
-    logger.info('sessionid=%d',sessionid)
-    nerfreals[sessionid] = None
-    nerfreal = await asyncio.get_event_loop().run_in_executor(None, build_nerfreal,sessionid)
-    nerfreals[sessionid] = nerfreal
-    
-    pc = RTCPeerConnection()
-    pcs.add(pc)
-
-    @pc.on("connectionstatechange")
-    async def on_connectionstatechange():
-        logger.info("Connection state is %s" % pc.connectionState)
-        if pc.connectionState == "failed":
-            await pc.close()
-            pcs.discard(pc)
-            if sessionid in nerfreals:
-                del nerfreals[sessionid]
-        if pc.connectionState == "closed":
-            pcs.discard(pc)
-            del nerfreals[sessionid]
-
-    player = HumanPlayer(nerfreals[sessionid])
-    audio_sender = pc.addTrack(player.audio)
-    video_sender = pc.addTrack(player.video)
-    capabilities = RTCRtpSender.getCapabilities("video")
-    preferences = list(filter(lambda x: x.name == "H264", capabilities.codecs))
-    preferences += list(filter(lambda x: x.name == "VP8", capabilities.codecs))
-    preferences += list(filter(lambda x: x.name == "rtx", capabilities.codecs))
-    transceiver = pc.getTransceivers()[1]
-    transceiver.setCodecPreferences(preferences)
-
-    await pc.setRemoteDescription(offer)
-
-    answer = await pc.createAnswer()
-    await pc.setLocalDescription(answer)
-
-    #return jsonify({"sdp": pc.localDescription.sdp, "type": pc.localDescription.type})
-
-    return web.Response(
-        content_type="application/json",
-        text=json.dumps(
-            {"sdp": pc.localDescription.sdp, "type": pc.localDescription.type, "sessionid":sessionid}
-        ),
-    )
+# async def offer(request):
+#     params = await request.json()
+#     offer = RTCSessionDescription(sdp=params["sdp"], type=params["type"])
+#
+#     if len(nerfreals) >= opt.max_session:
+#         logger.info('reach max session')
+#         return -1
+#     sessionid = str(randN(6)) #len(nerfreals)
+#     logger.info('sessionid=%d',sessionid)
+#     nerfreals[sessionid] = None
+#     nerfreal = await asyncio.get_event_loop().run_in_executor(None, build_nerfreal,sessionid)
+#     nerfreals[sessionid] = nerfreal
+#
+#     pc = RTCPeerConnection()
+#     pcs.add(pc)
+#
+#     @pc.on("connectionstatechange")
+#     async def on_connectionstatechange():
+#         logger.info("Connection state is %s" % pc.connectionState)
+#         if pc.connectionState == "failed":
+#             await pc.close()
+#             pcs.discard(pc)
+#             if sessionid in nerfreals:
+#                 del nerfreals[sessionid]
+#         if pc.connectionState == "closed":
+#             pcs.discard(pc)
+#             del nerfreals[sessionid]
+#
+#     player = HumanPlayer(nerfreals[sessionid])
+#     audio_sender = pc.addTrack(player.audio)
+#     video_sender = pc.addTrack(player.video)
+#     capabilities = RTCRtpSender.getCapabilities("video")
+#     preferences = list(filter(lambda x: x.name == "H264", capabilities.codecs))
+#     preferences += list(filter(lambda x: x.name == "VP8", capabilities.codecs))
+#     preferences += list(filter(lambda x: x.name == "rtx", capabilities.codecs))
+#     transceiver = pc.getTransceivers()[1]
+#     transceiver.setCodecPreferences(preferences)
+#
+#     await pc.setRemoteDescription(offer)
+#
+#     answer = await pc.createAnswer()
+#     await pc.setLocalDescription(answer)
+#
+#     #return jsonify({"sdp": pc.localDescription.sdp, "type": pc.localDescription.type})
+#
+#     return web.Response(
+#         content_type="application/json",
+#         text=json.dumps(
+#             {"sdp": pc.localDescription.sdp, "type": pc.localDescription.type, "sessionid":sessionid}
+#         ),
+#     )
 
 async def human(request):
     params = await request.json()
@@ -174,7 +174,7 @@ async def human(request):
 async def humanaudio(request):
     try:
         form= await request.post()
-        sessionid = int(form.get('sessionid',0))
+        sessionid = form.get('sessionid','')
         fileobj = form["file"]
         filename=fileobj.filename
         filebytes=fileobj.file.read()
@@ -197,7 +197,7 @@ async def humanaudio(request):
 async def set_audiotype(request):
     params = await request.json()
 
-    sessionid = params.get('sessionid',0)    
+    sessionid = params.get('sessionid','')
     nerfreals[sessionid].set_curr_state(params['audiotype'],params['reinit'])
 
     return web.Response(
@@ -210,7 +210,7 @@ async def set_audiotype(request):
 async def record(request):
     params = await request.json()
 
-    sessionid = params.get('sessionid',0)
+    sessionid = params.get('sessionid','')
     if params['type']=='start_record':
         # nerfreals[sessionid].put_msg_txt(params['text'])
         nerfreals[sessionid].start_recording()
@@ -226,8 +226,8 @@ async def record(request):
 
 async def upload(request):
     form = await request.post()
-    sessionid = int(form.get('sessionid', 0))
-    logger.info(f'sessionid={sessionid}')
+    model_id = int(form.get('sessionid', 0))
+    logger.info(f'model_id={model_id}')
 
     fileobj = form["file"]
     filebytes = fileobj.file.read()
@@ -239,14 +239,8 @@ async def upload(request):
     from wav2lip.genavatar import main
     logger.info("start video split")
 
-#    await asyncio.get_event_loop().run_in_executor(None, main,f"wav2lip256_avatar{sessionid}", file_temp_path, 256, False, None, 16, True)
     from asgiref.sync import sync_to_async
-    await sync_to_async(main)(f"wav2lip256_avatar{sessionid}", file_temp_path, 256, replace=True)
-
-#    if sessionid in nerfreals:
-#        await nerfreals[sessionid].pc.close()
-#        push_url = opt.push_url + str(sessionid)
-#        await run(push_url, sessionid)
+    await sync_to_async(main)(f"wav2lip256_avatar{model_id}", file_temp_path, 256, replace=True)
     logger.info("end vudei split")
 
     return web.Response(
@@ -259,17 +253,17 @@ async def upload(request):
 
 async def upload_sound(request):
     form = await request.post()
-    sessionid = int(form.get('sessionid', 0))
+    model_id = int(form.get('sessionid', 0))
     text = form.get('text', "未知")
-    logger.info(f'sessionid={sessionid}')
+    logger.info(f'model_id={model_id}')
 
     fileobj = form["file"]
     filebytes = fileobj.file.read()
-    file_temp_path = f"./data/sounds/{sessionid}.wav"
+    file_temp_path = f"./data/sounds/{model_id}.wav"
     with open(file_temp_path, "wb") as f:
         f.write(filebytes)
 
-    file_temp_path = f"./data/sounds/{sessionid}.txt"
+    file_temp_path = f"./data/sounds/{model_id}.txt"
     with open(file_temp_path, "wb") as f:
         f.write(text.encode('utf-8'))
 
@@ -284,7 +278,7 @@ async def upload_sound(request):
 async def is_speaking(request):
     params = await request.json()
 
-    sessionid = params.get('sessionid',0)
+    sessionid = params.get('sessionid','')
     return web.Response(
         content_type="application/json",
         text=json.dumps(
@@ -641,7 +635,7 @@ if __name__ == '__main__':
     #############################################################################
     appasync = web.Application(client_max_size=10 * 1024 * 1024)
     appasync.on_shutdown.append(on_shutdown)
-    appasync.router.add_post("/offer", offer)
+    # appasync.router.add_post("/offer", offer)
     appasync.router.add_post("/human", human)
     appasync.router.add_post("/humanaudio", humanaudio)
     appasync.router.add_post("/set_audiotype", set_audiotype)
