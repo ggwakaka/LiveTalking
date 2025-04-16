@@ -241,7 +241,7 @@ class VoitsTTS(BaseTTS):
     def __init__(self, opt, parent:BaseReal):
         super().__init__(opt, parent)
         self.text = ""
-        with open(f"./data/sounds/{self.opt.model_id}.txt", 'rb') as f:
+        with open(f"./data/sounds/{self.parent.model_id}.txt", 'rb') as f:
             self.text = str(f.read(), 'utf-8')
 
 
@@ -252,7 +252,7 @@ class VoitsTTS(BaseTTS):
         self.stream_tts(
             self.gpt_sovits(
                 text,
-                f"/sounds/{self.opt.model_id}.wav",
+                f"/sounds/{self.parent.model_id}.wav",
                 self.text,
                 # self.opt.REF_FILE,
                 # self.opt.REF_TEXT,

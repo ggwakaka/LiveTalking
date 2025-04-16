@@ -54,6 +54,7 @@ class BaseReal:
         self.sample_rate = 16000
         self.chunk = self.sample_rate // opt.fps # 320 samples per chunk (20ms * 16000 / 1000)
         self.sessionid = self.opt.sessionid
+        self.model_id = self.opt.model_id
 
         if opt.tts == "edgetts":
             self.tts = EdgeTTS(opt,self)
