@@ -65,8 +65,9 @@ def randN(N)->int:
     max = pow(10, N)
     return random.randint(min, max - 1)
 
-def build_nerfreal(sessionid:int)->BaseReal:
+def build_nerfreal(sessionid)->BaseReal:
     opt.sessionid=sessionid
+    opt.model_id=get_model_id(sessionid)
     from lipreal import load_avatar
     avatar = load_avatar(f"wav2lip256_avatar{sessionid}")
     if opt.model == 'wav2lip':
@@ -91,7 +92,7 @@ async def offer(request):
     if len(nerfreals) >= opt.max_session:
         logger.info('reach max session')
         return -1
-    sessionid = randN(6) #len(nerfreals)
+    sessionid = str(randN(6)) #len(nerfreals)
     logger.info('sessionid=%d',sessionid)
     nerfreals[sessionid] = None
     nerfreal = await asyncio.get_event_loop().run_in_executor(None, build_nerfreal,sessionid)
@@ -294,9 +295,9 @@ async def is_speaking(request):
 
 async def start(request):
     form = await request.json()
-    sessionid = int(form.get('sessionid', 0))
+    sessionid = form.get('sessionid', '')
     logger.info(f'sessionid={sessionid} start')
-    if sessionid == 0:
+    if sessionid == '':
         return web.Response(
             status=400,
             content_type="application/json",
@@ -308,7 +309,7 @@ async def start(request):
     if sessionid in nerfreals:
         logger.info(f'{sessionid} pc.close()')
         await nerfreals[sessionid].pc.close()
-    push_url = opt.push_url + str(sessionid)
+    push_url = opt.push_url + sessionid
     await run(push_url, sessionid)
 
     return web.Response(
@@ -321,9 +322,9 @@ async def start(request):
 
 async def stop(request):
     form = await request.json()
-    sessionid = int(form.get('sessionid', 0))
+    sessionid = form.get('sessionid', '')
     logger.info(f'sessionid={sessionid} stop')
-    if sessionid == 0:
+    if sessionid == '':
         return web.Response(
             status=400,
             content_type="application/json",
@@ -346,9 +347,9 @@ async def stop(request):
 
 async def is_start(request):
     form = await request.json()
-    sessionid = int(form.get('sessionid', 0))
+    sessionid = form.get('sessionid', '')
     logger.info(f'sessionid={sessionid}')
-    if sessionid == 0:
+    if sessionid == '':
         return web.Response(
             status=400,
             content_type="application/json",
@@ -374,12 +375,15 @@ async def is_start(request):
         ),
     )
 
+def get_model_id(sessionid):
+    return sessionid.split("-")[0]
+
 
 async def check_model(request):
     form = await request.json()
-    sessionid = int(form.get('sessionid', 0))
+    sessionid = form.get('sessionid', '')
     logger.info(f'sessionid={sessionid} check_model')
-    if sessionid == 0:
+    if sessionid == '':
         return web.Response(
             status=400,
             content_type="application/json",
@@ -387,10 +391,10 @@ async def check_model(request):
                 {"code": -1, "msg": "model is not found"}
             ),
         )
-
+    model_id = get_model_id(sessionid)
     result = False
-    if os.path.exists(f"./data/avatars/wav2lip256_avatar{sessionid}") \
-            and os.path.exists(f"./data/sounds/{sessionid}.txt"):
+    if os.path.exists(f"./data/avatars/wav2lip256_avatar{model_id}") \
+            and os.path.exists(f"./data/sounds/{model_id}.txt"):
         result = True
     return web.Response(
         content_type="application/json",
@@ -635,7 +639,7 @@ if __name__ == '__main__':
         rendthrd.start()
 
     #############################################################################
-    appasync = web.Application(client_max_size=5 * 1024 * 1024)
+    appasync = web.Application(client_max_size=10 * 1024 * 1024)
     appasync.on_shutdown.append(on_shutdown)
     appasync.router.add_post("/offer", offer)
     appasync.router.add_post("/human", human)
