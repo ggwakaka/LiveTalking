@@ -69,7 +69,7 @@ def build_nerfreal(sessionid)->BaseReal:
     opt.sessionid=sessionid
     opt.model_id=get_model_id(sessionid)
     from lipreal import load_avatar
-    avatar = load_avatar(f"wav2lip256_avatar{sessionid}")
+    avatar = load_avatar(f"wav2lip256_avatar{opt.model_id}")
     if opt.model == 'wav2lip':
         from lipreal import LipReal
         nerfreal = LipReal(opt,model,avatar)
