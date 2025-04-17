@@ -140,7 +140,7 @@ def build_nerfreal(sessionid)->BaseReal:
 async def human(request):
     params = await request.json()
 
-    sessionid = int(params.get('sessionid',0))
+    sessionid = params.get('sessionid','')
     logger.info(f'sessionid={sessionid}')
 
     if sessionid not in nerfreals:
